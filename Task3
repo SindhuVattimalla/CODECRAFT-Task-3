@@ -1,0 +1,278 @@
+Password Complexity Checker
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Password Strength Checker</title>
+  <style>
+    :root{
+      --bg:#0f172a; /* slate-900 */
+      --panel:#111827; /* gray-900 */
+      --muted:#94a3b8; /* slate-400 */
+      --text:#e5e7eb; /* gray-200 */
+      --good:#22c55e; /* green-500 */
+      --warn:#f59e0b; /* amber-500 */
+      --bad:#ef4444; /* red-500 */
+      --accent:#6366f1; /* indigo-500 */
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 80% -10%, #1f2937 0%, transparent 60%),
+                  radial-gradient(1000px 500px at -10% 110%, #1f2937 0%, transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      display:grid; place-items:center; padding:24px;
+    }
+    .card{
+      width:min(760px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:18px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,0.3);
+      backdrop-filter: blur(6px);
+    }
+    h1{margin:0 0 4px; font-size: clamp(22px, 3.2vw, 28px)}
+    p.sub{margin:0 0 18px; color:var(--muted); font-size:14px}
+
+    label{display:block; font-size:14px; color:var(--muted); margin-bottom:6px}
+    .row{display:flex; gap:10px; align-items:center}
+
+    .input-wrap{position:relative;}
+    input[type="password"], input[type="text"]{
+      width:100%; padding:14px 44px 14px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.1);
+      background: #0b1021; color: var(--text); outline:none; font-size:16px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+    }
+    .toggle{
+      position:absolute; right:8px; top:50%; transform:translateY(-50%);
+      background:transparent; border:0; color:var(--muted); cursor:pointer; padding:6px 10px; border-radius:8px;
+    }
+    .toggle:hover{color:var(--text); background:rgba(255,255,255,0.06)}
+
+    .meter{height:12px; width:100%; background:#0b1021; border-radius:999px; border:1px solid rgba(255,255,255,0.08); overflow:hidden}
+    .meter > div{height:100%; width:0%; transition: width .25s ease;}
+
+    .strength-label{font-weight:600}
+
+    .grid{display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-top:16px}
+    .panel{padding:14px; border:1px solid rgba(255,255,255,0.08); border-radius:12px; background:#0b1021}
+    ul{list-style:none; padding-left:0; margin:0}
+    li{display:flex; gap:8px; align-items:flex-start; padding:6px 0; font-size:14px; color:var(--text)}
+    .muted{color:var(--muted)}
+    .chip{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; font-size:12px; border:1px solid rgba(255,255,255,0.12); background:#0b1021}
+
+    .row-between{display:flex; align-items:center; justify-content:space-between; gap:10px}
+    .hint{font-size:12px; color:var(--muted)}
+
+    .footer{margin-top:18px; font-size:12px; color:var(--muted)}
+    .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background:#0b1021; border:1px solid rgba(255,255,255,0.12); padding:2px 6px; border-radius:6px}
+
+    .ok{color:var(--good)}
+    .warn{color:var(--warn)}
+    .bad{color:var(--bad)}
+    .accent{color:var(--accent)}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  </style>
+</head>
+<body>
+  <div class="card" role="application" aria-label="Password Strength Checker">
+    <h1>🔐 Password Strength Checker</h1>
+    <p class="sub">Type a password to see real‑time strength, criteria checks, and tips to improve it.</p>
+
+    <div class="input-wrap" aria-live="polite">
+      <label for="pw">Password</label>
+      <input id="pw" type="password" placeholder="Enter password" autocomplete="off" aria-describedby="strengthText criteriaList" />
+      <button id="toggle" class="toggle" type="button" aria-label="Show password" title="Show/Hide"><span class="mono">👁</span></button>
+    </div>
+
+    <div style="height:12px; margin:12px 0 10px" class="meter" aria-hidden="true"><div id="bar"></div></div>
+
+    <div class="row-between" style="margin-bottom:8px">
+      <div>
+        <span class="muted">Strength:</span>
+        <span id="strengthText" class="strength-label">—</span>
+        <span id="scoreChip" class="chip" aria-hidden="true">0 / 100</span>
+      </div>
+      <div class="hint">Tip: Use at least <span class="mono">12–16</span> characters with mixed types.</div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="muted" style="margin-bottom:6px">Criteria</div>
+        <ul id="criteriaList" aria-live="polite">
+          <li id="c-length"><span>•</span><span>Length ≥ 8</span></li>
+          <li id="c-length12"><span>•</span><span>Length ≥ 12</span></li>
+          <li id="c-lower"><span>•</span><span>Contains lowercase</span></li>
+          <li id="c-upper"><span>•</span><span>Contains uppercase</span></li>
+          <li id="c-number"><span>•</span><span>Contains number</span></li>
+          <li id="c-special"><span>•</span><span>Contains special character</span></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <div class="muted" style="margin-bottom:6px">Suggestions</div>
+        <ul id="suggestions">
+          <li class="muted">Start typing to see suggestions…</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer">Keyboard shortcut: press <span class="kbd">Alt</span> + <span class="kbd">R</span> to generate a random strong password.</div>
+  </div>
+
+  <script>
+    const pw = document.getElementById('pw');
+    const bar = document.getElementById('bar');
+    const strengthText = document.getElementById('strengthText');
+    const scoreChip = document.getElementById('scoreChip');
+    const toggle = document.getElementById('toggle');
+    const sugg = document.getElementById('suggestions');
+
+    const criteriaEls = {
+      len8: document.getElementById('c-length'),
+      len12: document.getElementById('c-length12'),
+      lower: document.getElementById('c-lower'),
+      upper: document.getElementById('c-upper'),
+      number: document.getElementById('c-number'),
+      special: document.getElementById('c-special'),
+    };
+
+    const COMMON = new Set([
+      'password','123456','123456789','qwerty','abc123','letmein','iloveyou','admin','welcome','monkey','dragon','111111','123123','12345678','qwerty123','1q2w3e4r','qazwsx','password1','000000'
+    ]);
+
+    function assessPassword(p){
+      const length = p.length;
+      const hasLower = /[a-z]/.test(p);
+      const hasUpper = /[A-Z]/.test(p);
+      const hasNumber = /\d/.test(p);
+      const hasSpecial = /[^\w\s]/.test(p);
+
+      // Base scoring
+      let score = 0;
+      if (length >= 8) score += 15;
+      if (length >= 12) score += 15; // cumulative
+      if (length >= 16) score += 10;
+
+      if (hasLower) score += 12;
+      if (hasUpper) score += 12;
+      if (hasNumber) score += 12;
+      if (hasSpecial) score += 12;
+
+      // Variety bonus based on unique characters and repeats
+      const uniques = new Set(p).size;
+      if (length) {
+        const variety = Math.min(20, Math.floor((uniques / length) * 20));
+        score += variety;
+      }
+
+      // Penalize predictable patterns
+      if (/^(?:([a-zA-Z])\1+|([0-9])\2+)$/.test(p)) score -= 25; // same char or repeated single class
+      if (/^(?:abc|abcd|qwerty|1234|12345|password)/i.test(p)) score -= 20;
+
+      // Strong penalty for very common passwords
+      if (COMMON.has(p.toLowerCase())) score = 5;
+
+      score = Math.max(0, Math.min(100, score));
+
+      let label = 'Very Weak';
+      if (score >= 81) label = 'Very Strong';
+      else if (score >= 61) label = 'Strong';
+      else if (score >= 41) label = 'Fair';
+      else if (score >= 21) label = 'Weak';
+
+      // Suggestions
+      const suggestions = [];
+      if (length < 12) suggestions.push('Use at least 12–16 characters.');
+      if (!(hasLower && hasUpper)) suggestions.push('Mix UPPER and lower case.');
+      if (!hasNumber) suggestions.push('Add digits (0–9).');
+      if (!hasSpecial) suggestions.push('Include special characters (e.g., !@#$%).');
+      if (/\s/.test(p)) suggestions.push('Avoid spaces.');
+      if (/([a-zA-Z])\1{2,}/.test(p)) suggestions.push('Avoid repeating the same character.');
+      if (/^(?:abc|abcd|qwerty|1234|12345)/i.test(p)) suggestions.push('Avoid sequences like abc or 1234.');
+      if (COMMON.has(p.toLowerCase())) suggestions.push('Do not use common passwords.');
+      if (!p) suggestions.push('Consider a passphrase made of random words.');
+
+      return {
+        score, label,
+        checks: { len8: length>=8, len12: length>=12, lower: hasLower, upper: hasUpper, number: hasNumber, special: hasSpecial }
+      , suggestions };
+    }
+
+    function updateUI(result){
+      const { score, label, checks, suggestions } = result;
+
+      // Meter bar color from red -> amber -> green
+      const pct = score;
+      const color = pct < 40 ? 'var(--bad)' : (pct < 70 ? 'var(--warn)' : 'var(--good)');
+      bar.style.width = pct + '%';
+      bar.style.background = color;
+
+      strengthText.textContent = label;
+      scoreChip.textContent = `${score} / 100`;
+
+      // Criteria marks
+      mark(criteriaEls.len8, checks.len8);
+      mark(criteriaEls.len12, checks.len12);
+      mark(criteriaEls.lower, checks.lower);
+      mark(criteriaEls.upper, checks.upper);
+      mark(criteriaEls.number, checks.number);
+      mark(criteriaEls.special, checks.special);
+
+      // Suggestions list
+      sugg.innerHTML = '';
+      if (suggestions.length === 0 && pw.value) {
+        const li = document.createElement('li');
+        li.innerHTML = '<span class="ok">✓</span><span>Your password looks strong.</span>';
+        sugg.appendChild(li);
+      } else if (!pw.value) {
+        const li = document.createElement('li');
+        li.className = 'muted';
+        li.textContent = 'Start typing to see suggestions…';
+        sugg.appendChild(li);
+      } else {
+        for(const s of suggestions){
+          const li = document.createElement('li');
+          li.innerHTML = '<span class="warn">•</span><span>'+ s +'</span>';
+          sugg.appendChild(li);
+        }
+      }
+    }
+
+    function mark(el, ok){
+      el.innerHTML = ok ? '<span class="ok">✓</span><span>'+ el.textContent.replace(/^.*?\s/, '') +'</span>'
+                        : '<span class="bad">•</span><span>'+ el.textContent.replace(/^.*?\s/, '') +'</span>';
+    }
+
+    function generateRandom(length = 16){
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+      const array = new Uint32Array(length);
+      if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(array);
+      else for (let i=0;i<length;i++) array[i] = Math.floor(Math.random()*chars.length);
+      return Array.from(array, x => chars[x % chars.length]).join('');
+    }
+
+    // Events
+    pw.addEventListener('input', ()=> updateUI(assessPassword(pw.value)));
+
+    toggle.addEventListener('click', ()=>{
+      const showing = pw.type === 'text';
+      pw.type = showing ? 'password' : 'text';
+      toggle.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+    });
+
+    // Keyboard shortcut Alt+R to generate strong password
+    window.addEventListener('keydown', (e)=>{
+      if (e.altKey && (e.key === 'r' || e.key === 'R')){
+        const rnd = generateRandom(16);
+        pw.value = rnd;
+        updateUI(assessPassword(rnd));
+      }
+    });
+
+    // Initialize
+    updateUI(assessPassword(''));
+  </script>
+</body>
+</html>
